@@ -1,0 +1,94 @@
+---
+title: "EDA for Project 1"
+author: "Isabel Serrato"
+date: 2021-10-12
+output:
+  github_document:
+    toc: true
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+filename <- "./data/ACSST5Y2018.S1901_data_with_overlays_2021-10-12T134520.csv"
+df_income_total <- read_csv(filename, col_names = c("id", "Geographic Area Name", "Estimate!!Households!!Total", "Margin of Error!!Households MOE!!Total"), skip = 2)
+df_income <- df_income_total %>% select(1:4)
+head(df_income)
+```
+```{r}
+filename_pop <- "./data/ACSDT5Y2018.B01003_data_with_overlays_2021-10-05T112340.csv"
+df_pop <- read_csv(filename_pop, col_names = c("id", "Geographic Area Name", "Estimate!!Total", "Margin of Error!!Total"), skip = 2)
+```
+
+```{r}
+url_counties <- "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv"
+filename_nyt <- "./data/nyt_counties.csv"
+
+## Download the data locally
+curl::curl_download(
+        url_counties,
+        destfile = filename_nyt
+      )
+
+## Loads the downloaded csv
+df_covid <- read_csv(filename_nyt)
+```
+
+```{r}
+df_q3 <- df_income %>% mutate(fips = str_extract(id, "(\\d*$)"))
+df_fips_pop <- df_pop %>% mutate(fips = str_extract(id, "(\\d*$)"))
+
+```
+```{r}
+df_q4 <- df_covid %>% left_join(df_q3, by = "fips")
+df_q5 <- df_q4 %>% left_join(df_fips_pop, by = "fips")
+df_q5
+```
+```{r}
+df_data <-
+  df_q5 %>%
+  select(
+    date,
+    county,
+    state,
+    fips,
+    cases,
+    deaths,
+    med_income = `Estimate!!Households!!Total`,
+    population = `Estimate!!Total`
+  )
+df_data
+```
+```{r}
+df_normalized <- 
+  df_data %>%
+  mutate(cases_per100k = cases / population * 100000) %>%
+  mutate(deaths_per100k = deaths / population * 100000)
+df_normalized
+```
+```{r}
+df_normalized %>%
+  arrange(desc(med_income)) %>%
+  distinct(county, .keep_all = TRUE) %>%
+  select(county, state, med_income, cases_per100k, population)
+```
+```{r}
+max_date <- max(df_normalized$date)
+
+```
+
+```{r}
+df_normalized %>%
+  filter(date == max_date) %>%
+  ggplot() + 
+  geom_point(mapping = aes(med_income, deaths_per100k)) +
+  scale_x_log10()
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
