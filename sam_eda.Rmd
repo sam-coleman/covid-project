@@ -1,0 +1,173 @@
+---
+title: "Sam EDA"
+author: "Sam Coleman"
+date: "10/12/2021"
+output:
+  github_document:
+    toc: true
+---
+
+```{r setup}
+library(tidyverse)
+library(lubridate)
+```
+
+Load and tidy data sets from challenge 6 
+```{r}
+file_path <- "./data/ACSDT5Y2018.B01003_2021-10-07T144621/ACSDT5Y2018.B01003_data_with_overlays_2021-10-06T000603.csv"
+df_pop <- read_csv(file_path, skip = 1)
+
+url_counties <- "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv"
+filename_nyt <- "./data/nyt_counties.csv"
+
+## Download the data locally
+curl::curl_download(
+        url_counties,
+        destfile = filename_nyt
+      )
+
+## Loads the downloaded csv
+df_covid <- read_csv(filename_nyt)
+
+df_pop_fip <- 
+  df_pop %>%
+  separate(
+    col = id,
+    into = c("id_beginning", "fips"),
+    sep = -5
+  )
+
+df_full_joined <- 
+  df_covid %>% 
+  left_join(df_pop_fip, by = "fips")
+
+df_data <-
+  df_full_joined %>%
+  select(
+    date,
+    county,
+    state,
+    fips,
+    cases,
+    deaths,
+    population = `Estimate!!Total`
+  )
+```
+2020 Election and Covid 
+https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/VOQCHQ
+
+```{r}
+# pres_path <- "./data/countypres_2000-2020.csv"
+# df_pres <- read_csv(pres_path)
+# df_pres %>% tail(n = 10)
+```
+
+```{r}
+# df_pres_2020 <-
+#   df_pres %>% 
+#   filter(year == 2020)
+# 
+# df_pres_2020 %>% 
+#   pull(party) %>% 
+#   unique()
+```
+
+
+```{r}
+# GET JUST THE INFO I WANT FROM PRES DATA
+# df_min_pres_2020 <-
+#   df_pres_2020 %>% 
+#   #subset(select = c(county_fips, party, candidatevotes, totalvotes)) %>%
+#   group_by(party) %>% 
+#   mutate(rn = row_number()) %>% 
+#   pivot_wider(
+#     names_from = party,
+#     values_from = candidatevotes,
+#     values_fill = 0
+#   ) %>% 
+#   rename(fips = county_fips)
+# 
+# df_min_pres_2020 %>% 
+#   group_by(fips) %>% 
+#   filter(n()>15)
+
+# df_all <-
+#   df_data %>% 
+#   inner_join(df_min_pres_2020, by = "fips")
+# 
+# df_all
+```
+This dataset had more information than I wanted, which made tidying more difficult. I decided to find a different dataset with fewer columns, as I only really care about democratic and republic anayway.
+New dataset link: https://github.com/tonmcg/US_County_Level_Election_Results_08-20
+
+```{r}
+c_path <- "./data/2020_US_County_Level_Presidential_Results.csv"
+df_c <- 
+  read_csv(c_path) %>% 
+  rename(fips = county_fips)
+
+df_c %>% head()
+```
+
+```{r}
+df_full <-
+  df_data %>% 
+  left_join(df_c, by = "fips") %>% 
+  filter(!(state %in% c("Virgin Islands", "Puerto Rico", "American Samoa", "Guam", "Northern Mariana Islands")))
+
+df_full <-
+  df_full %>% 
+  select(
+    date,
+    county,
+    state,
+    fips,
+    cases,
+    deaths,
+    population, 
+    votes_gop,
+    votes_dem,
+    total_votes,
+    diff,
+    per_gop,
+    per_dem,
+    per_point_diff
+  )
+
+df_full %>% head()
+```
+
+```{r}
+state_results <-
+  df_full %>% 
+  group_by(state) %>% 
+  summarize(
+    result = ifelse(sum(votes_dem, na.rm = TRUE) > sum(votes_gop, na.rm = TRUE), "D", "R"),
+    date,
+    cases,
+    deaths
+  ) %>% 
+  # group_by(date) %>% 
+  # mutate(
+  #   cases = sum(cases),
+  #   deaths = sum(deaths)
+  # )
+  #TODO get this working (sum by state)
+  aggregate(
+    .$cases,
+    by = list(state_results$date),
+    FUN = sum
+  )
+
+# state_agg <-
+#   aggregate(
+#     state_results$cases,
+#     by = list(state_results$date),
+#     FUN = sum
+#   )
+
+state_results
+```
+
+
+
