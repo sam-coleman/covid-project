@@ -14,7 +14,7 @@ library(lubridate)
 
 Load and tidy data sets from challenge 6 
 ```{r}
-file_path <- "./data/ACSDT5Y2018.B01003_2021-10-07T144621/ACSDT5Y2018.B01003_data_with_overlays_2021-10-06T000603.csv"
+file_path <- "./data/ACSDT5Y2018.B01003_data_with_overlays_2021-10-05T112340.csv"
 df_pop <- read_csv(file_path, skip = 1)
 
 url_counties <- "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv"
@@ -39,7 +39,8 @@ df_pop_fip <-
 
 df_full_joined <- 
   df_covid %>% 
-  left_join(df_pop_fip, by = "fips")
+  left_join(df_pop_fip, by = "fips") %>% 
+  filter(!(state %in% c("Virgin Islands", "Puerto Rico", "American Samoa", "Guam", "Northern Mariana Islands")))
 
 df_data <-
   df_full_joined %>%
@@ -105,69 +106,146 @@ c_path <- "./data/2020_US_County_Level_Presidential_Results.csv"
 df_c <- 
   read_csv(c_path) %>% 
   rename(fips = county_fips)
-
+  
 df_c %>% head()
 ```
 
 ```{r}
+election_res_state <-
+  df_c %>% 
+  group_by(state_name) %>% 
+  summarize(
+    results = ifelse(sum(votes_dem, na.rm = TRUE) > sum(votes_gop, na.rm = TRUE), "D", "R"),
+    diff,
+    fips,
+    per_gop,
+    per_dem,
+    per_point_diff,
+    state = state_name
+  ) 
+
+election_res_state
+```
+```{r}
+df_data %>% 
+  pull(fips) %>% 
+  unique() %>% 
+  length()
+
+not_res <- setdiff(df_data$fips, election_res_state$fips)
+
+df_data %>% 
+  filter(fips %in% c(not_res))
+```
+
+
+```{r}
 df_full <-
   df_data %>% 
-  left_join(df_c, by = "fips") %>% 
-  filter(!(state %in% c("Virgin Islands", "Puerto Rico", "American Samoa", "Guam", "Northern Mariana Islands")))
+  right_join(election_res_state, by = "fips") %>%
+  mutate(
+    cases_per100k = (cases / population) * 100000,
+    deaths_per100k = (deaths / population) * 100000
+  )
+  #filter(!(state.x %in% c("Virgin Islands", "Puerto Rico", "American Samoa", "Guam", "Northern Mariana Islands")))
+
 
 df_full <-
-  df_full %>% 
+  df_full %>%
   select(
     date,
     county,
-    state,
+    state_name,
     fips,
     cases,
     deaths,
-    population, 
-    votes_gop,
-    votes_dem,
-    total_votes,
+    cases_per100k,
+    deaths_per100k,
+    results,
+    population,
     diff,
     per_gop,
     per_dem,
     per_point_diff
-  )
-
-df_full %>% head()
+  ) %>%
+  rename(state = state_name)
+df_full
 ```
 
 ```{r}
-state_results <-
-  df_full %>% 
-  group_by(state) %>% 
+coeff <- 1e-3
+colors <- c("D" = "blue", "R" = "red")
+
+df_full %>% 
+  group_by(state, date) %>% 
   summarize(
-    result = ifelse(sum(votes_dem, na.rm = TRUE) > sum(votes_gop, na.rm = TRUE), "D", "R"),
-    date,
-    cases,
-    deaths
+    state_cases = sum(cases),
+    state_deaths = sum(deaths),
+    results
   ) %>% 
-  # group_by(date) %>% 
-  # mutate(
-  #   cases = sum(cases),
-  #   deaths = sum(deaths)
+  #ggplot(aes(x = date, color = results, group = str_c(state, results))) +
+  ggplot(aes(x = date, group = state, color = results)) +
+  geom_line(aes(y = state_cases)) +
+  labs (
+    title = "Cases Per State"
+  ) +
+  scale_color_manual(values = colors)
+
+df_full %>% 
+  group_by(state, date) %>% 
+  summarize(
+    state_cases = sum(cases),
+    state_deaths = sum(deaths),
+    results
+  ) %>% 
+  #ggplot(aes(x = date, color = results, group = str_c(state, results))) +
+  ggplot(aes(x = date, group = state, color = results)) +
+  geom_line(aes(y = state_deaths)) +
+  labs (
+    title = "Deaths Per State"
+  ) +
+  scale_color_manual(values = colors)
+  # geom_line(aes(y = state_cases)) +
+  # geom_line(aes(y = state_deaths / coeff), linetype = "dashed") +
+  # scale_y_continuous(
+  #   name = "Cases",
+  #   sec.axis = sec_axis(~.*coeff, name = "Deaths")
   # )
-  #TODO get this working (sum by state)
-  aggregate(
-    .$cases,
-    by = list(state_results$date),
-    FUN = sum
-  )
-
-# state_agg <-
-#   aggregate(
-#     state_results$cases,
-#     by = list(state_results$date),
-#     FUN = sum
-#   )
-
-state_results
 ```
 
+```{r}
+#PER 100k (normalized)
 
+ 
+df_full %>% 
+group_by(state, date) %>% 
+summarize(
+  state_norm_cases = (sum(cases) / sum(population)) * 100000,
+  state_norm_deaths = (sum(deaths) / sum(population)) * 100000,
+  results
+) %>% 
+#ggplot(aes(x = date, color = results, group = str_c(state, results))) +
+ggplot(aes(x = date, group = state, color = results)) +
+geom_line(aes(y = state_norm_cases)) +
+labs (
+  title = "Cases Per State Per 100k"
+) +
+scale_color_manual(values = colors)
+
+
+df_full %>%
+  group_by(state, date) %>%
+  summarize(
+    state_cases = (sum(cases) / sum(population)) * 100000,
+    state_deaths =(sum(deaths) / sum(population)) * 100000,
+    results
+  ) %>%
+  #ggplot(aes(x = date, color = results, group = str_c(state, results))) +
+  ggplot(aes(x = date, group = state, color = results)) +
+  geom_line(aes(y = state_deaths)) +
+  labs (
+    title = "Deaths Per State Per 100k"
+  ) + 
+  scale_color_manual(values = colors)
+```
 
