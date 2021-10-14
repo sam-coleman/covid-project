@@ -1,0 +1,9 @@
+MASK DATA
+- display box plots better
+- make gradient between 0 and 1
+- remove territories
+- break up by subregion to show graphs
+- summarize it for trends
+mask data is june 2020? should we only use june 2020 data then?
+graphs that are less info but still interesting (summarize/simplify)
+animate?? over time
