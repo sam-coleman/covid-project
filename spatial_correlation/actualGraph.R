@@ -21,6 +21,7 @@ df_sorted_2 <-
     directional_flow = if_else(switched, -max_lag, max_lag)
   ) %>% 
   summarize(flow = sum(directional_flow)) %>% 
+  # mutate(flow = -flow) %>% 
   ungroup()
 
 all_states <- 
