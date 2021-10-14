@@ -3,6 +3,16 @@ library(igraph)
 library(ggraph)
 load("C:/dev/git/covid-project/spatial_correlation/covid_flows_sorted.RData")
 
+geo_centers <- 
+  read.csv(
+  "C:/dev/git/covid-project/spatial_correlation/GeographicCenters.csv", 
+  skip = 0
+) %>% 
+  select(!state) %>%  # get rid of the 2-letter abbreviation
+  mutate(state = name %>% tolower()) %>% 
+  select(state, latitude, longitude)
+  
+  
 df_sorted_2 <- 
   df_sorted %>% 
   group_by(state, neighbor) %>% 
