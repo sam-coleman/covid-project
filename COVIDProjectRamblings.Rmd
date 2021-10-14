@@ -137,6 +137,7 @@ df_masks_covid_state %>%
   summarise(statecases_per100k = mean(cases_per100k, na.rm = TRUE), stateav = stateav) %>%
   ggplot(aes(date, statecases_per100k, color = stateav)) +
   geom_line() +
+  viridis::scale_color_viridis() +
   facet_wrap(~ state)
 
 ```
