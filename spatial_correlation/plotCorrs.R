@@ -58,4 +58,7 @@ df_sorted <-
   select(!c("tmp_state", "tmp_neighbor")) %>% 
   arrange(state, neighbor)
 
-
+save(
+  df_sorted, 
+  file = "C:/dev/git/covid-project/spatial_correlation/covid_flows_sorted.RData"
+)
