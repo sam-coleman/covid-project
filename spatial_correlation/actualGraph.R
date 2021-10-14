@@ -13,21 +13,34 @@ df_sorted_2 <-
   ungroup()
 
 whigsGraph <- 
-  graph_from_edgelist(
-    df_sorted_2 %>% 
-      select(state, neighbor) %>% 
-      data.matrix()
+  graph_from_data_frame(
+    df_sorted_2, 
+    directed = TRUE
   )
 
-whigsGraph <- graph_from_adjacency_matrix(whigs %*% t(whigs), mode = 'upper', 
-  weighted = TRUE, diag = FALSE)
+layoutdf <- data.frame(
+  x = 1:48, 
+  y = (1:48)^2
+  # name = df_sorted_2 %>% 
+  #   distinct(state) %>% 
+  #   full_join(distinct(df_sorted_2 %>% distinct(neighbor)), by = c("state" = "neighbor")) %>% 
+  #   pull(state)
+  )
+
+X <- 1:48
+Y <- (1:48)^2
+
+layout <- create_layout(whigsGraph, layoutdf, FALSE)
 
 V(whigsGraph)$degree <- degree(whigsGraph)
 
-ggraph(whigsGraph, 'igraph', algorithm = 'kk') + 
+ggraph(layout = layout) + 
   geom_edge_link0() + 
+  geom_node_text(aes(label = name), color = 'blue', size = 3) +
   geom_node_point(colour = 'forestgreen')
 
+length(E(whigsGraph))
+length(V(whigsGraph))
 
 # ggraph(whigsGraph, 'igraph', algorithm = 'kk') + 
 #   geom_edge_link0(aes(width = weight), edge_alpha = 0.1) + 
