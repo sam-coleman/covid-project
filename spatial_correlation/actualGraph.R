@@ -2,6 +2,7 @@ library(tidyverse)
 library(tidygraph)
 library(igraph)
 library(ggraph)
+library(ggmap)
 load("C:/dev/git/covid-project/spatial_correlation/covid_flows_sorted.RData")
 
 geo_centers <- 
@@ -71,7 +72,8 @@ layout <- create_layout(mygraph, geo_states_ordered %>% select(!name))
 
 ######################################################################
 
-ggraph(graph = layout) + 
+g <- 
+  ggraph(graph = layout) + 
   # geom_edge_link0() + 
   # geom_node_text(aes(label = name), color = 'blue', size = 3) + 
   # geom_node_point(colour = 'forestgreen') + 
@@ -89,12 +91,14 @@ ggraph(graph = layout) +
     ), 
     size = 3
   )
+g
 
-length(E(whigsGraph))
-length(V(whigsGraph))
+us <- map_data("state")
 
-# ggraph(whigsGraph, 'igraph', algorithm = 'kk') + 
-#   geom_edge_link0(aes(width = weight), edge_alpha = 0.1) + 
-#   geom_node_point(aes(size = degree), colour = 'forestgreen') + 
-#   geom_node_text(aes(label = name, filter = degree > 150), color = 'white', 
-#     size = 3)
+g + geom_map(data = us, aes(map_id = region), map = us, fill = "transparent", color = "black") +
+  expand_limits(x = us$long, y = us$lat)
+
+
+ggplot(us) + 
+  geom_map(aes(map_id = region), map = us, fill = "transparent", color = "black") + 
+  expand_limits(x = us$long, y = us$lat)
