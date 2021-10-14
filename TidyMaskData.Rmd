@@ -16,6 +16,7 @@ library(ggrepel)
 mask_state_raw <- read_csv("./data/U.S._State_and_Territorial_Public_Mask_Mandates_From_April_8__2020_through_August_15__2021_by_State_by_Day.csv")
 mask_county_raw <- read_csv("./data/U.S._State_and_Territorial_Public_Mask_Mandates_From_April_10__2020_through_August_15__2021_by_County_by_Day.csv")
 state_abbrev <- read_csv("./data/stateShortToLong.csv")
+fips_county_state <- read_csv("./data/fips-by-state.csv")
 ```
 state wide mask data from https://data.cdc.gov/Policy-Surveillance/U-S-State-and-Territorial-Public-Mask-Mandates-Fro/tzyy-aayg
 Notes about data: 
@@ -34,9 +35,16 @@ mask_state
 
 ```{r}
 mask_county <-
-  mask_county_raw
+  mask_county_raw %>% 
+  left_join(fips_county_state, by = c("County_Name" = "name", "State_Tribe_Territory" = "state")) %>% 
+  select(
+    State = State_Tribe_Territory,
+    County = County_Name,
+    date,
+    Face_Masks_Required_in_Public,
+    fips
+  )
 
-mask_county %>% 
-  tail
+mask_county
 ```
 
