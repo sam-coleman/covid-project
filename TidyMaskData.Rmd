@@ -1,0 +1,42 @@
+---
+title: "Sam EDA"
+author: "Sam Coleman"
+date: "10/12/2021"
+output:
+  github_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggrepel)
+```
+
+```{r}
+mask_state_raw <- read_csv("./data/U.S._State_and_Territorial_Public_Mask_Mandates_From_April_8__2020_through_August_15__2021_by_State_by_Day.csv")
+mask_county_raw <- read_csv("./data/U.S._State_and_Territorial_Public_Mask_Mandates_From_April_10__2020_through_August_15__2021_by_County_by_Day.csv")
+state_abbrev <- read_csv("./data/stateShortToLong.csv")
+```
+state wide mask data from https://data.cdc.gov/Policy-Surveillance/U-S-State-and-Territorial-Public-Mask-Mandates-Fro/tzyy-aayg
+Notes about data: 
+  - Some states never report, some states do and then stop
+  - There are also times that only some counties have a mandate
+    - This is reported by a comma separated list of counties names
+
+```{r}
+mask_state <-
+  mask_state_raw %>% 
+  right_join(state_abbrev, by = c("State_Tribe_Territory" = "Code")) %>% 
+  select(State, date, Face_Masks_Required_in_Public, Specific_counties)
+
+mask_state
+```
+
+```{r}
+mask_county <-
+  mask_county_raw
+
+mask_county %>% 
+  tail
+```
+
