@@ -1,0 +1,193 @@
+---
+title: "COVID Project Ramblings"
+output: github_document
+---
+
+```{r}
+library(tidyverse)
+library(ggrepel)
+
+```
+
+
+```{r}
+url_masks <- "https://raw.githubusercontent.com/nytimes/covid-19-data/master/mask-use/mask-use-by-county.csv"
+
+df_masks <- read_csv(url(url_masks))
+
+df_masks
+```
+
+
+```{r}
+df_pop <- read_csv("./ACSDT5Y2018.B01003_data_with_overlays_2021-10-05T112340.csv", skip = 1)
+
+names(df_pop)
+df_pop
+
+df_pop2 <- df_pop %>%
+  separate(
+    col = 'id',
+    into = c('extra', 'fips'),
+    sep = -5,
+    remove = FALSE
+  ) %>%
+  subset(select = -c(extra, id))
+  
+
+df_pop2
+```
+
+
+```{r}
+url_counties <- "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv"
+
+filename_nyt <- "./nyt_counties.csv"
+
+## Download the data locally
+curl::curl_download(
+        url_counties,
+        destfile = filename_nyt
+      )
+
+## Loads the downloaded csv
+df_covid <- read_csv(filename_nyt)
+df_covid
+
+```
+Taking a closer look at the masks data set
+
+```{r}
+
+df_masks
+
+df_masks_2 <- df_masks %>%
+  pivot_longer(
+    cols = c('NEVER', 'RARELY', 'SOMETIMES','FREQUENTLY','ALWAYS'),
+    names_to = 'frequency',
+    values_to = 'percent'
+  ) %>%
+  mutate(frequency = as.character(frequency))
+
+
+df_masks_2
+
+df_masks_2$frequency = factor(df_masks_2$frequency, levels = c('NEVER', 'RARELY', 'SOMETIMES','FREQUENTLY','ALWAYS'), ordered = TRUE)
+
+df_masks_2 %>%
+  filter(COUNTYFP %in% c('01001', '01019')) %>%
+  ggplot() +
+  geom_col(aes(frequency, percent)) +
+  facet_wrap (~ COUNTYFP)
+```
+
+```{r}
+df_masks_weighted <- df_masks %>%
+  mutate(NEVER = NEVER*1, RARELY = RARELY*2, SOMETIMES = SOMETIMES*3, FREQUENTLY = FREQUENTLY*4, ALWAYS = ALWAYS*5) %>%
+  mutate(weightedav = (NEVER+RARELY+SOMETIMES+FREQUENTLY+ALWAYS)/15)
+
+df_masks_weighted
+
+df_masks_w <- df_masks_weighted %>%
+  select(COUNTYFP, weightedav)
+
+df_pop2
+
+df_masks_3 <- df_masks_w %>%
+  left_join(
+    df_pop2,
+    by = c("COUNTYFP" = "fips")
+  )
+
+df_masks_4 <- df_masks_3 %>%
+  separate(
+    col = 'Geographic Area Name',
+    into = c('County', 'State'),
+    sep = ",",
+    remove = FALSE
+  )
+
+df_masks_4 %>%
+  ggplot(aes(x = State, y = weightedav, color = State)) +
+  geom_boxplot() +
+  theme(legend.position = 'none', axis.text.x = element_text(angle = 80, hjust = 1))
+
+df_masks_covid <- df_covid %>%
+  full_join(df_masks_4, by = c('fips' = 'COUNTYFP')) %>%
+  select(date, county, state, fips, cases, deaths, weightedav, population = 'Estimate!!Total') %>%
+   mutate(cases_per100k = (cases/population)*100000, deaths_per100k = (deaths/population)*100000)
+
+df_masks_covid
+
+df_masks_covid %>%
+  filter(state == 'Washington') %>%
+  ggplot(aes(date, cases_per100k, color = weightedav)) +
+  geom_line() +
+  viridis::scale_color_viridis() +
+  facet_wrap(~ county)
+
+
+df_masks_covid_state <- df_masks_covid %>%
+  group_by(state) %>%
+  summarise(stateav = mean(weightedav, na.rm = TRUE)) %>%
+  right_join(df_masks_covid, by = c('state' = 'state'))
+  
+df_masks_covid_state %>%
+  group_by(state, date) %>%
+  summarise(statecases_per100k = mean(cases_per100k, na.rm = TRUE), stateav = stateav) %>%
+  ggplot(aes(date, statecases_per100k, color = stateav)) +
+  geom_line() +
+  facet_wrap(~ state)
+
+```
+
+Things to try;
+write a function to find the max cases per 100k, then create a plot that plots that max vs. the weighted av for every county in a point plot
+
+```{r}
+df_masks_covid
+
+df_maxvweight <- df_masks_covid %>%
+  group_by(fips) %>%
+  summarise(max_cases_per = max(cases_per100k)) %>%
+  arrange(desc(max_cases_per)) %>%
+  left_join(df_masks_4, by = c('fips' = 'COUNTYFP')) %>%
+  select(max_cases_per, weightedav, County, State, fips)
+
+df_maxvweight
+
+df_maxvweight <- df_maxvweight %>% 
+  mutate(State = str_trim(State))
+
+df_maxvweight %>%
+  filter(State == 'Massachusetts') %>%
+  ggplot(aes(x = County, y = max_cases_per, color = weightedav)) +
+  geom_point() +
+  theme(legend.position = 'none')
+
+df_maxvweight %>%
+  filter(State == 'Pennsylvania') %>%
+  ggplot(aes(x = County, y = max_cases_per, color = weightedav)) +
+  geom_point() +
+  theme(legend.position = 'none')
+
+df_maxvweight %>%
+  ggplot(aes(x = State, y = max_cases_per, color = weightedav)) +
+  geom_point() +
+  theme(legend.position = 'none', axis.text.x = element_text(angle = 80, hjust = 1))
+
+df_maxvweight %>%
+  ggplot(aes(x = weightedav, y = max_cases_per)) +
+  geom_point() +
+  geom_smooth() +
+  theme(legend.position = 'none', axis.text.x = element_text(angle = 80, hjust = 1))
+```
+
+```{r}
+df_masks_covid %>%
+  filter(state == 'Wyoming') %>%
+  ggplot(aes(date, cases_per100k, color = weightedav, group = county)) +
+  geom_line() +
+  viridis::scale_color_viridis()
+```
+
