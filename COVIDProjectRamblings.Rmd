@@ -83,8 +83,8 @@ df_masks_2 %>%
 
 ```{r}
 df_masks_weighted <- df_masks %>%
-  mutate(NEVER = NEVER*1, RARELY = RARELY*2, SOMETIMES = SOMETIMES*3, FREQUENTLY = FREQUENTLY*4, ALWAYS = ALWAYS*5) %>%
-  mutate(weightedav = (NEVER+RARELY+SOMETIMES+FREQUENTLY+ALWAYS)/15)
+  mutate(NEVER = NEVER*0, RARELY = RARELY*1, SOMETIMES = SOMETIMES*2, FREQUENTLY = FREQUENTLY*3, ALWAYS = ALWAYS*4) %>%
+  mutate(weightedav = (NEVER+RARELY+SOMETIMES+FREQUENTLY+ALWAYS)/4)
 
 df_masks_weighted
 
@@ -137,6 +137,7 @@ df_masks_covid_state %>%
   summarise(statecases_per100k = mean(cases_per100k, na.rm = TRUE), stateav = stateav) %>%
   ggplot(aes(date, statecases_per100k, color = stateav)) +
   geom_line() +
+  viridis::scale_color_viridis() +
   facet_wrap(~ state)
 
 ```
