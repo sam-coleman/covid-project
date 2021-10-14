@@ -72,9 +72,23 @@ layout <- create_layout(mygraph, geo_states_ordered %>% select(!name))
 ######################################################################
 
 ggraph(graph = layout) + 
-  geom_edge_link0() + 
-  geom_node_text(aes(label = name), color = 'blue', size = 3) +
-  geom_node_point(colour = 'forestgreen')
+  # geom_edge_link0() + 
+  # geom_node_text(aes(label = name), color = 'blue', size = 3) + 
+  # geom_node_point(colour = 'forestgreen') + 
+  # geom_edge_link() + 
+  geom_edge_link(
+    aes(
+      start_cap = label_rect(node1.name),
+      end_cap = label_rect(node2.name)
+    ), 
+    arrow = arrow(length = unit(4, 'mm'))
+  ) + 
+  geom_node_text(
+    aes(
+      label = name
+    ), 
+    size = 3
+  )
 
 length(E(whigsGraph))
 length(V(whigsGraph))
@@ -84,12 +98,3 @@ length(V(whigsGraph))
 #   geom_node_point(aes(size = degree), colour = 'forestgreen') + 
 #   geom_node_text(aes(label = name, filter = degree > 150), color = 'white', 
 #     size = 3)
-
-# layoutdf <- data.frame(
-#   x = 1:48, 
-#   y = (1:48)^2
-#   # name = df_sorted_2 %>% 
-#   #   distinct(state) %>% 
-#   #   full_join(distinct(df_sorted_2 %>% distinct(neighbor)), by = c("state" = "neighbor")) %>% 
-#   #   pull(state)
-# )
