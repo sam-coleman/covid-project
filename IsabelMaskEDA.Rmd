@@ -1,0 +1,98 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggrepel)
+```
+
+```{r}
+mask_county_raw <- read_csv("./data/U.S._State_and_Territorial_Public_Mask_Mandates_From_April_10__2020_through_August_15__2021_by_County_by_Day.csv")
+state_abbrev <- read_csv("./data/stateShortToLong.csv")
+fips_county_state <- read_csv("./data/fips-by-state.csv")
+file_path <- "./data/ACSDT5Y2018.B01003_data_with_overlays_2021-10-05T112340.csv"
+df_pop <- read_csv(file_path, skip = 1)
+mask_county_raw
+```
+```{r}
+mask_county <-
+  mask_county_raw %>% 
+  left_join(fips_county_state, by = c("County_Name" = "name", "State_Tribe_Territory" = "state")) %>% 
+  select(
+    State = State_Tribe_Territory,
+    County = County_Name,
+    date,
+    Face_Masks_Required_in_Public,
+    fips) %>%
+  mutate(date = as.Date(date, "%m/%d/%y"))
+
+mask_county_filtered <- mask_county %>%
+  filter(!is.na(Face_Masks_Required_in_Public))
+mask_county_filtered
+
+url_counties <- "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv"
+filename_nyt <- "./data/nyt_counties.csv"
+
+## Download the data locally
+curl::curl_download(
+        url_counties,
+        destfile = filename_nyt
+      )
+
+## Loads the downloaded csv
+df_covid <- read_csv(filename_nyt)
+
+df_pop_fip <- 
+  df_pop %>%
+  separate(
+    col = id,
+    into = c("id_beginning", "fips"),
+    sep = -5
+  )
+```
+``` {r}
+
+df_full_joined <- 
+  df_covid %>% 
+  left_join(df_pop_fip, by = "fips") %>% 
+  filter(!(state %in% c("Virgin Islands", "Puerto Rico", "American Samoa", "Guam", "Northern Mariana Islands"))) #%>%
+df_full_joined
+mask_county_filtered
+
+df_data <-
+  df_full_joined %>%
+  select(
+    date,
+    county,
+    state,
+    fips,
+    cases,
+    deaths,
+    population = `Estimate!!Total`) %>%
+    mutate(
+    cases_per100k = (cases / population) * 100000,
+    deaths_per100k = (deaths / population) * 100000) %>%
+    right_join(mask_county_filtered, by = c("fips", "date"))
+
+
+```
+```{r}
+mask_county_filtered %>%
+  group_by(State, date, Face_Masks_Required_in_Public) %>%
+  summarize(count = n()) %>%
+  pivot_wider(names_from = Face_Masks_Required_in_Public,
+              values_from = count)
+  
+  
+```
+
+```{r}
+df_data
+```
+
