@@ -42,6 +42,7 @@ us <- map_data("state") %>%
     by = c("region" = "State")
   )
 
+
 g <- 
   ggplot(us) + 
   geom_map_interactive(

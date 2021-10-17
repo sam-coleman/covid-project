@@ -59,29 +59,31 @@ us <- us_1 %>%
   by = c("match_county" = "match_county"), 
   # keep = TRUE
 ) %>% 
-  filter(region == "arkansas", subregion < "carroll")
+  # select(long, lat, group, order, region, match_county, county_days_with_mandate) %>% 
+  filter(region <= "arkansas", match_county < "carroll")
+# us[1, 4] <- "bbbbbbb"
+us[1, 7] <- "bbbbbbb"
 
 g <- 
   ggplot(us) + 
   geom_map_interactive(
-    data = us, 
     mapping = aes(
       map_id = region, 
-      group = subregion, 
-      fill = county_days_with_mandate, 
-      tooltip = sprintf(
-        "%s<br/>%s%%", 
-        # toTitleCase(subregion), 
-        match_county, 
-        county_days_with_mandate
-      )
-    ), 
+      group = order, 
+      fill = match_county, 
+      tooltip = match_county
+        # sprintf(
+        # "%s<br/>%s%%", 
+        # # toTitleCase(subregion), 
+        # match_county, 
+        # county_days_with_mandate
+      ), 
     map = us, 
     color = "black"
   ) + 
   expand_limits(x = us$long, y = us$lat) + 
   coord_map() + 
-  viridis::scale_fill_viridis() + 
+  # viridis::scale_fill_viridis() + 
   labs(
     x = "Long.", 
     y = "Lat.",
