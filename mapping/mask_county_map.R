@@ -2,6 +2,7 @@ library(tidyverse)
 library(ggmap)
 library(ggiraph)
 library(tools)
+library(stringr)
 load("C:/dev/git/covid-project/data/mask_county.RData")
 
 state_abbrev <- 
@@ -24,22 +25,55 @@ mask_county_2 <-
     state_abbr = State, 
     State = tolower(State.y), 
     .keep = "unused"
+  ) %>% 
+  mutate(
+    match_county = tolower(County) %>% 
+      str_sub(1, -8) %>%
+      str_remove_all("[\\W]")
   )
 
-us <- map_data("state") %>% 
+
+us_counties <- map_data("county") %>% 
+  distinct(subregion) %>% 
+  mutate(
+    subregion = subregion %>% 
+      str_remove_all("\\W")
+  )
+head(counties, 1)
+length(us_counties$subregion)
+
+ms_counties <- mask_county_2 %>% 
+  distinct(County) %>% 
+  mutate(
+    county = tolower(County) %>% 
+      str_sub(1, -8) %>% 
+      str_remove_all("[\W]"), 
+    .keep = "unused"
+  )
+head(ms_counties, 5)
+length(ms_counties$county)
+
+df <- us_counties %>% filter(substr(subregion, 1, 1) == 's')
+df_2 <- ms_counties %>% filter(substr(county, 1, 1) == 's')
+
+
+us_1 <- map_data("county") %>% 
+  mutate(
+    match_county = subregion %>% 
+      str_remove_all("\\W")
+  ) %>% 
   left_join(
     mask_county_2 %>% 
-      group_by(State) %>% 
-      summarize(
+      mutate(
         county_days_with_mandate = 
           if_else(
             all(isNA), 
             NA_real_, 
             mean(masks)
           )
-      ), 
-    df_2, 
-    by = c("region" = "State")
+      ) %>% 
+      select(match_county, county_days_with_mandate), 
+    by = c("match_county" = "match_county")
   )
 
 g <- 
