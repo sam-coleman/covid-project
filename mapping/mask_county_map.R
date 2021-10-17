@@ -28,43 +28,21 @@ mask_county_2 <-
   ) %>% 
   mutate(
     match_county = tolower(County) %>% 
+    match_county = paste0(match_county, State) %>% 
       str_sub(1, -8) %>%
-      str_remove_all("[\\W]")
+      str_remove_all("[\\W]"), 
   )
-
-
-us_counties <- map_data("county") %>% 
-  distinct(subregion) %>% 
-  mutate(
-    subregion = subregion %>% 
-      str_remove_all("\\W")
-  )
-head(counties, 1)
-length(us_counties$subregion)
-
-ms_counties <- mask_county_2 %>% 
-  distinct(County) %>% 
-  mutate(
-    county = tolower(County) %>% 
-      str_sub(1, -8) %>% 
-      str_remove_all("[\W]"), 
-    .keep = "unused"
-  )
-head(ms_counties, 5)
-length(ms_counties$county)
-
-df <- us_counties %>% filter(substr(subregion, 1, 1) == 's')
-df_2 <- ms_counties %>% filter(substr(county, 1, 1) == 's')
-
 
 us_1 <- map_data("county") %>% 
   mutate(
-    match_county = subregion %>% 
+    match_county = tolower(subregion) %>% 
+      paste0(region) %>% 
       str_remove_all("\\W")
-  ) 
+  )
+
 mask_county_2_1 <- 
 mask_county_2 %>% 
-  group_by(State, match_county) %>% 
+  group_by(match_county, State) %>% 
   summarize(
     county_days_with_mandate = 
       if_else(
@@ -75,39 +53,30 @@ mask_county_2 %>%
   ) %>% 
   select(state = State, match_county, county_days_with_mandate)
 
-mask_county_2_1a <- mask_county_2_1 %>% filter(state < "mississippi")
-mask_county_2_1b <- mask_county_2_1 %>% filter(state >= "mississippi")
-
-us_1a <- us_1 %>% 
+us <- us_1 %>% 
   left_join(
-    mask_county_2_1a, 
-    by = c("match_county" = "match_county", "region" = "state")
-  )
-us_1b <- us_1 %>% 
-  left_join(
-    mask_county_2_1b, 
-    by = c("match_county" = "match_county", "region" = "state")
-  )
-
-us <- 
-  bind_rows(us_1a, us_1b)
+  mask_county_2_1, 
+  by = c("match_county" = "match_county"), 
+  # keep = TRUE
+) %>% 
+  filter(region == "arkansas", subregion < "carroll")
 
 g <- 
   ggplot(us) + 
   geom_map_interactive(
     data = us, 
     mapping = aes(
-      map_id = match_county, 
+      map_id = region, 
+      group = subregion, 
       fill = county_days_with_mandate, 
-      group = region, 
       tooltip = sprintf(
         "%s<br/>%s%%", 
-        toTitleCase(subregion), 
-        county_days_with_mandate * 100
+        # toTitleCase(subregion), 
+        match_county, 
+        county_days_with_mandate
       )
     ), 
     map = us, 
-    # fill = "transparent", 
     color = "black"
   ) + 
   expand_limits(x = us$long, y = us$lat) + 
@@ -120,7 +89,6 @@ g <-
     title = "Cumulative Mask Mandates", 
     subtitle = "Aggregated for each county in the state"
   )
-
 w <- widgetframe::frameWidget(girafe(code=print(g)))
 w
 
