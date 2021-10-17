@@ -88,7 +88,9 @@ df_2 %>%
 
 As stated, the correlations are calculated when a lag is applied to each state separately, and this often yields asymmetries in correlation. This last visualization shows the difference in maximum correlation and the corresponding lag that produced it for each pair of neighboring states. For Florida and Alabama, for example, the difference in correlations would be `.751 - .624 = .127`, and the corresponding lag would be `17 - 5 = 12` days. There is an apparent linear correlation between these two quantities! This means that pairs of neighboring states for which cases in one state lagged behind the other are in general more strongly correlated if the lag time between them is greater.
 
-```{r flow}
+A significant contributor to the slope of this trend may be attributed to the outliers at small lags and large differences in correlation. But there is still a clear positive trend, even looking at the non-outlier data points. The intercept is very close to zero, meaning that positive lag differences are associated with positive differences in maximum correlation.
+
+```{r lag_differences}
 
 df_sorted <- 
   df_2 %>% 
