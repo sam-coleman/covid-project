@@ -3,6 +3,7 @@ library(tidygraph)
 library(igraph)
 library(ggraph)
 library(ggmap)
+library(viridis)
 load("C:/dev/git/covid-project/spatial_correlation/covid_flows_sorted.RData")
 
 geo_centers <- 
@@ -20,7 +21,10 @@ df_sorted_2 <-
   mutate(
     directional_flow = if_else(switched, -max_lag, max_lag)
   ) %>% 
-  summarize(flow = sum(directional_flow)) %>% 
+  summarize(
+    flow = sum(directional_flow), 
+    corr = max(corr)
+  ) %>% 
   ungroup()
 
 all_states <- 
@@ -66,7 +70,7 @@ mygraph <-
         state = if_else(switch, neighbor_2, state_2), 
         neighbor = if_else(switch, state_2, neighbor_2)
       ) %>% 
-      select(state, neighbor, flow) %>% 
+      select(state, neighbor, flow, corr) %>% 
       mutate(zero_flow = as.factor(flow == 0)), 
     directed = TRUE
   )
@@ -81,7 +85,8 @@ g <-
       label = flow, 
       start_cap = label_rect(node1.name),
       end_cap = label_rect(node2.name), 
-      alpha = zero_flow
+      alpha = zero_flow, 
+      color = corr
     ), 
     angle_calc = 'along', 
     label_dodge = unit(2.5, 'mm'),
@@ -89,6 +94,7 @@ g <-
     arrow = arrow(length = unit(3, 'mm'))
   ) + 
   scale_edge_alpha_discrete(limits = c(TRUE, FALSE), range = c(.2, 1)) +
+  scale_edge_color_viridis(option = "rocket") + 
   geom_node_text(
     aes(
       label = name
@@ -104,6 +110,12 @@ geo_states_ordered <-
   left_join(geo_states, by = c("name" = "state"))
 
 us <- map_data("state")
-g + geom_map(data = us, aes(map_id = region), map = us, fill = "transparent", color = "black") +
+g + geom_map(
+    data = us, 
+    aes(map_id = region), 
+    map = us, 
+    fill = "transparent", 
+    color = "grey50"
+  ) +
   expand_limits(x = us$long, y = us$lat)
   

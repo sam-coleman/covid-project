@@ -18,8 +18,7 @@ stateCorrs %>%
     x = "State", 
     y = "corr", 
     title = "Oregon"
-  ) + 
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.25, hjust=1))
+  )
 
 ###################
 ###################
@@ -33,6 +32,12 @@ df_2 <-
 
 df_2 %>%
   ggplot(mapping = aes(x = max_lag, y = corr)) +
+  geom_point()
+
+df_2 %>%
+  group_by(state, neighbor) %>% 
+  summarize() %>% 
+  ggplot(mapping = aes(x = x)) +
   geom_point()
 
 df_2 %>%
@@ -56,6 +61,24 @@ df_sorted <-
   ) %>% 
   select(!c("tmp_state", "tmp_neighbor")) %>% 
   arrange(state, neighbor)
+
+df_sorted_2 <- 
+  df_sorted %>% 
+  group_by(state, neighbor) %>% 
+  mutate(
+    directional_flow = if_else(switched, -max_lag, max_lag), 
+    directional_corr = if_else(switched, -corr, corr)
+  ) %>% 
+  summarize(
+    flow = sum(directional_flow), 
+    corr = sum(directional_corr), 
+  ) %>% 
+  ungroup()
+
+df_sorted_2 %>%
+  ggplot(mapping = aes(x = flow, y = corr)) +
+  geom_point(aes(color = state)) + 
+  geom_smooth(method = "lm")
 
 save(
   df_sorted, 
