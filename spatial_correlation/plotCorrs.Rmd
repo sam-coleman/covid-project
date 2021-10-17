@@ -11,11 +11,15 @@ This document and `actualGraph.Rmd` are for visualizing the cross-border correla
 
 Correlations in Covid-19 case rates are computed for each pair of neighboring states in the contiguous US using the following formula. The difference between successive daily totals is calculated using the `diff` function, to give the number of new cases reported on that day. The rows of `state1` and `state2` are joined by date, but the date itself is not used. Then the correlation coefficient is calculated using `cor(state1, state2)`.
 
-The same correlation is then computed when each state is given an offset of between 1 and 100 days, using the `lag` parameter in `diff`. The idea is that states that lag behind one another in their cross-border correlation is an indicator of cross-border flow of Covid-19 cases from the first state to the lagging state.
+The same correlation is then computed when each state is given an offset of between 1 and 100 days, using the `lag` parameter in `diff`. The idea is that states that lag behind one another in their cross-border correlation is an indicator of cross-border flow of Covid-19 cases from the leading state to the lagging state.
 
 Take Alabama and Florida. Their simultaneous correlation of Covid-19 cases during the pandemic has an `r` coefficient of `0.537`. This is not a particularly strong correlation, especially compared with that between other states, and it is more likely to reflect the national trend in cases rather than a direct connection between the states in question.
 
-However, the lagging correlations
+However, the lagging correlations tell a different story. When the Florida case values are held constant and Alabama's values are given a variable time lag, the maximum correlation between the two states occurs when the Alabama data have a lag of 5 days, yielding a correlation coefficient of `0.624`.
+
+By contrast, when the Alabama case values are held constant, the maximum correlation occurs when Florida's cases have a lag of 17 days (meaning Florida's case numbers are up to 17 days *behind* Alabama's), yielding a correlation of `0.751`.
+
+This asymmetry suggests a directionality to the flow of cases: Alabama's case values changed first, and 2-3 weeks later, Florida saw a very similar change in case numbers. Not only is the time lag for the Alabama-to-Florida direction greater, there is also a much stronger correlation in this direction.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -27,15 +31,18 @@ load("C:/dev/git/covid-project/spatial_correlation/stateCorrs_different_lags.RDa
 ```
 
 ```{r}
+state1 <- "alabama"
+state2 <- "florida"
+
 stateCorrs %>%
   ggplot(mapping = aes(x = neighbor, y = corr, color = lag)) +
   geom_jitter(
-    data = . %>% filter(state == "oregon", neighbor == "washington"), 
+    data = . %>% filter(state == state1, neighbor == state2), 
     width = 0.25, 
     height = 0
   ) + 
   geom_jitter(
-    data = . %>% filter(state == "washington", neighbor == "oregon"), 
+    data = . %>% filter(state == state2, neighbor == state1), 
     width = 0.25, 
     height = 0
   ) + 
