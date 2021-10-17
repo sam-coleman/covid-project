@@ -1,4 +1,4 @@
-library(tidyverse)
+`library(tidyverse)
 library(tidygraph)
 library(igraph)
 library(ggraph)
@@ -82,7 +82,7 @@ g <-
   ggraph(graph = layout) + 
   geom_edge_link(
     aes(
-      label = flow, 
+      label = abs(flow), 
       start_cap = label_rect(node1.name),
       end_cap = label_rect(node2.name), 
       alpha = zero_flow, 
@@ -93,7 +93,7 @@ g <-
     label_size = 3, 
     arrow = arrow(length = unit(3, 'mm'))
   ) + 
-  scale_edge_alpha_discrete(limits = c(TRUE, FALSE), range = c(.2, 1)) +
+  scale_edge_alpha_discrete(limits = c(TRUE, FALSE), range = c(.1, 1)) +
   scale_edge_color_viridis(option = "rocket") + 
   geom_node_text(
     aes(
@@ -117,5 +117,9 @@ g + geom_map(
     fill = "transparent", 
     color = "grey50"
   ) +
-  expand_limits(x = us$long, y = us$lat)
-  
+  expand_limits(x = us$long, y = us$lat) + 
+  coord_map()
+
+ggsave("us_covid_flows.svg", width = 13, height = 11)
+
+`
