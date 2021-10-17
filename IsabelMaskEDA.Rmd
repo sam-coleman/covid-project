@@ -21,6 +21,14 @@ df_pop <- read_csv(file_path, skip = 1)
 mask_county_raw
 ```
 ```{r}
+df_county_count <- fips_county_state %>%
+  group_by(state) %>%
+  summarize(num_counties = n())
+df_county_count
+```
+
+
+```{r}
 mask_county <-
   mask_county_raw %>% 
   left_join(fips_county_state, by = c("County_Name" = "name", "State_Tribe_Territory" = "state")) %>% 
@@ -80,19 +88,38 @@ df_data <-
     deaths_per100k = (deaths / population) * 100000) %>%
     right_join(mask_county_filtered, by = c("fips", "date"))
 
-
-```
-```{r}
-mask_county_filtered %>%
-  group_by(State, date, Face_Masks_Required_in_Public) %>%
-  summarize(count = n()) %>%
-  pivot_wider(names_from = Face_Masks_Required_in_Public,
-              values_from = count)
-  
-  
-```
-
-```{r}
 df_data
+```
+```{r}
+df_count <- df_data %>%
+  filter(!is.na(cases_per100k), !is.na(deaths_per100k)) %>%
+  group_by(State, date, Face_Masks_Required_in_Public) %>%
+  summarize(count = n(), total_casesper100k = mean(cases_per100k), total_deathsper100k = mean(deaths_per100k)) %>%
+  pivot_wider(names_from = Face_Masks_Required_in_Public,
+              values_from = count) %>%
+  ungroup()
+df_count[is.na(df_count)] <- 0
+df_count
+
+df_percent <- df_count %>%
+  left_join(df_county_count, by = c("State" = "state")) %>%
+  mutate(percent_mask = Yes / num_counties * 100)
+df_percent
+
+df_percent %>%
+  ggplot() +
+  geom_point(mapping = aes(x = percent_mask, y = total_deathsper100k, color = State)) +
+  scale_y_log10()
+```
+
+```{r}
+df_percent %>%
+  filter(State == "MA") %>%
+  arrange(date) %>%
+  ggplot(mapping = aes(x = percent_mask, y = total_deathsper100k)) +
+  geom_segment(aes(xend = c(tail(percent_mask, n=-1), NA), yend = c(tail(total_deathsper100k, n=-1), NA), color = State)) +
+  scale_y_log10() +
+  geom_point()
+
 ```
 
