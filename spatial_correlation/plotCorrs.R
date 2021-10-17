@@ -40,9 +40,8 @@ df_2 %>%
   geom_histogram(binwidth = 1)
 
 df_2 %>% 
-  summarize(median = median(max_lag))
-
-View(df_2)
+  summarize(median = median(max_lag)) %>% 
+  print()
 
 df_sorted <- 
   df_2 %>% 

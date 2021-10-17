@@ -69,7 +69,6 @@ g <-
   geom_map_interactive(
     mapping = aes(
       map_id = region, 
-      group = order, 
       fill = match_county, 
       tooltip = match_county
         # sprintf(
