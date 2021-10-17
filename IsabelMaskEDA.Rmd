@@ -24,7 +24,6 @@ mask_county_raw
 df_county_count <- fips_county_state %>%
   group_by(state) %>%
   summarize(num_counties = n())
-df_county_count
 ```
 
 
@@ -98,13 +97,13 @@ df_count <- df_data %>%
   pivot_wider(names_from = Face_Masks_Required_in_Public,
               values_from = count) %>%
   ungroup()
+
 df_count[is.na(df_count)] <- 0
 df_count
 
 df_percent <- df_count %>%
   left_join(df_county_count, by = c("State" = "state")) %>%
-  mutate(percent_mask = Yes / num_counties * 100)
-df_percent
+  mutate(percent_mask = ifelse(Yes / num_counties * 100 < 101, Yes / num_counties * 100, Yes / num_counties * 100 / 2 ))
 
 df_percent %>%
   ggplot() +
@@ -114,12 +113,27 @@ df_percent %>%
 
 ```{r}
 df_percent %>%
-  filter(State == "MA") %>%
+  filter(State == "CA") %>%
   arrange(date) %>%
-  ggplot(mapping = aes(x = percent_mask, y = total_deathsper100k)) +
-  geom_segment(aes(xend = c(tail(percent_mask, n=-1), NA), yend = c(tail(total_deathsper100k, n=-1), NA), color = State)) +
+  ggplot(mapping = aes(x = percent_mask, y = total_casesper100k)) +
+  geom_segment(aes(xend = c(tail(percent_mask, n=-1), NA), yend = c(tail(total_casesper100k, n=-1), NA), color = State)) +
   scale_y_log10() +
   geom_point()
 
+```
+
+```{r}
+df_data %>%
+  select(date, county, State, cases, deaths, population, Face_Masks_Required_in_Public) %>%
+  mutate(avg_cases = c(NA, diff(cases))) %>%
+  filter(county == "Cook") %>%
+  ggplot(aes(x = date, y = avg_cases)) + 
+  geom_point(mapping = aes(color = Face_Masks_Required_in_Public)) + 
+  # geom_line() + 
+  scale_x_date(date_labels = "%b-%d-%y", date_breaks = "1 month") +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
+```{r}
+df_data
 ```
 
