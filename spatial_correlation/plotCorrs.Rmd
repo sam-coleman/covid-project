@@ -32,7 +32,7 @@ load("C:/dev/git/covid-project/spatial_correlation/stateCorrs_different_lags.RDa
 
 The following plot illustrates the imbalance in the lagged correlations
 
-```{r}
+```{r lagged correlations}
 state1 <- "alabama"
 state2 <- "florida"
 
@@ -48,15 +48,18 @@ stateCorrs %>%
   geom_line() + 
   geom_vline(xintercept = c(5, 17), linetype = "dashed", alpha = 0.5) + 
   labs(
-    x = "State with lag applied", 
+    x = "Time lag (days)", 
     y = "Correlation coefficient (r)", 
+    color = "State with\nlag applied", 
     title = "Temporal Asymmetry between Alabama and Florida"
   )
 ```
 
-```{###################}
-###################
+## Looking for patterns
 
+To see if it is always true that a longer time lag corresponds with a higher maximum correlation, see the scatterplot below. There does not appear to be any correlation. There is a cluster of points with very low correlation and some with unusually long time lags (\> 35 days = 5 weeks), but these do not correspond to the same state.
+
+```{r scatterplot}
 df_2 <- 
   stateCorrs %>% 
   group_by(state, neighbor) %>% 
@@ -65,22 +68,27 @@ df_2 <-
   rename(max_lag = lag)
 
 df_2 %>%
-  ggplot(mapping = aes(x = max_lag, y = corr)) +
-  geom_point()
+  ggplot(mapping = aes(x = max_lag, y = corr, color = state)) +
+  geom_point(show.legend = FALSE)
+```
 
-df_2 %>%
-  group_by(state, neighbor) %>% 
-  summarize() %>% 
-  ggplot(mapping = aes(x = x)) +
-  geom_point()
+The following histogram shows that most correlations between neighboring states are strongest for very small lags (the median is 6 days). This indicates that the trajectory of the pandemic was largely uniform across the US, as half of the states experienced changes in case rates within a week of each other.
+
+```{r histogram}
+df_2 %>% 
+  summarize(median = median(max_lag)) %>% 
+  print()
 
 df_2 %>%
   ggplot(mapping = aes(x = max_lag)) +
   geom_histogram(binwidth = 1)
 
-df_2 %>% 
-  summarize(median = median(max_lag)) %>% 
-  print()
+
+```
+
+As stated, the correlations are calculated when a lag is applied to each state separately, and this often yields asymmetries in correlation. This last visualization shows the difference in maximum correlation and the corresponding lag that produced it for each pair of neighboring states. For Florida and Alabama, for example, the difference in correlations would be `.751 - .624 = .127`, and the corresponding lag would be `17 - 5 = 12` days. There is an apparent linear correlation between these two quantities! This means that pairs of neighboring states for which cases in one state lagged behind the other are in general more strongly correlated if the lag time between them is greater.
+
+```{r flow}
 
 df_sorted <- 
   df_2 %>% 
@@ -111,18 +119,21 @@ df_sorted_2 <-
 
 df_sorted_2 %>%
   ggplot(mapping = aes(x = flow, y = corr)) +
-  geom_point(aes(color = state)) + 
-  geom_smooth(method = "lm")
+  geom_point(aes(color = state), show.legend = FALSE) + 
+  geom_smooth(method = "lm") + 
+  labs(
+    x = "Difference in lag at max. correlation (days)", 
+    y = "Difference in max. correlation coefficient"
+  )
 
 save(
   df_sorted, 
   file = "C:/dev/git/covid-project/spatial_correlation/covid_flows_sorted.RData"
 )
-
 ```
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
+In `actualGraph.R`, the time lags are shown as directional arrows; states that where cases changed first are shown with arrows pointing to the state with a lagging change. The natural interpretation when seeing that graph (yes, it is an *actual graph* in the mathematical sense) is to see arrows as flows of increasing case numbers. Remember these two points when reading it.
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+-   Does any of this imply causation -- that *because* the case numbers for one state lagged behind the other, that cases *moved* or *overflowed* from one state to the other? No. But it gives us some insight into the temporal relationship between neighboring states, and where case rate changes happened first.
+
+-   It is also important to note that correlations can be for changing case numbers up, or down -- a state that was ahead of another state could have either seen cases fall first or rise first.
