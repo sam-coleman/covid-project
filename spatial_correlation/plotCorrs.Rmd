@@ -30,29 +30,31 @@ library(tidyverse)
 load("C:/dev/git/covid-project/spatial_correlation/stateCorrs_different_lags.RData")
 ```
 
+The following plot illustrates the imbalance in the lagged correlations
+
 ```{r}
 state1 <- "alabama"
 state2 <- "florida"
 
 stateCorrs %>%
-  ggplot(mapping = aes(x = neighbor, y = corr, color = lag)) +
-  geom_jitter(
-    data = . %>% filter(state == state1, neighbor == state2), 
-    width = 0.25, 
-    height = 0
-  ) + 
-  geom_jitter(
-    data = . %>% filter(state == state2, neighbor == state1), 
-    width = 0.25, 
-    height = 0
-  ) + 
+  semi_join(
+    tibble(
+      state = c(state1, state2), 
+      neighbor = c(state2, state1)
+    ), 
+    by = c("state" = "state", "neighbor" = "neighbor")
+  ) %>% 
+  ggplot(mapping = aes(x = lag, y = corr, color = state)) +
+  geom_line() + 
+  geom_vline(xintercept = c(5, 17), linetype = "dashed", alpha = 0.5) + 
   labs(
-    x = "State", 
-    y = "corr", 
-    title = "Oregon"
+    x = "State with lag applied", 
+    y = "Correlation coefficient (r)", 
+    title = "Temporal Asymmetry between Alabama and Florida"
   )
+```
 
-###################
+```{###################}
 ###################
 
 df_2 <- 
