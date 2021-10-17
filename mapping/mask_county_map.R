@@ -61,31 +61,48 @@ us_1 <- map_data("county") %>%
   mutate(
     match_county = subregion %>% 
       str_remove_all("\\W")
+  ) 
+mask_county_2_1 <- 
+mask_county_2 %>% 
+  group_by(State, match_county) %>% 
+  summarize(
+    county_days_with_mandate = 
+      if_else(
+        all(isNA), 
+        NA_real_, # I know this isn't in the style guide, but this line just had to be indented
+        mean(masks)
+      )
   ) %>% 
+  select(state = State, match_county, county_days_with_mandate)
+
+mask_county_2_1a <- mask_county_2_1 %>% filter(state < "mississippi")
+mask_county_2_1b <- mask_county_2_1 %>% filter(state >= "mississippi")
+
+us_1a <- us_1 %>% 
   left_join(
-    mask_county_2 %>% 
-      mutate(
-        county_days_with_mandate = 
-          if_else(
-            all(isNA), 
-            NA_real_, 
-            mean(masks)
-          )
-      ) %>% 
-      select(match_county, county_days_with_mandate), 
-    by = c("match_county" = "match_county")
+    mask_county_2_1a, 
+    by = c("match_county" = "match_county", "region" = "state")
   )
+us_1b <- us_1 %>% 
+  left_join(
+    mask_county_2_1b, 
+    by = c("match_county" = "match_county", "region" = "state")
+  )
+
+us <- 
+  bind_rows(us_1a, us_1b)
 
 g <- 
   ggplot(us) + 
   geom_map_interactive(
     data = us, 
     mapping = aes(
-      map_id = region, 
+      map_id = match_county, 
       fill = county_days_with_mandate, 
+      group = region, 
       tooltip = sprintf(
         "%s<br/>%s%%", 
-        toTitleCase(region), 
+        toTitleCase(subregion), 
         county_days_with_mandate * 100
       )
     ), 
