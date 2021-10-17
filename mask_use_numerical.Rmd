@@ -1,0 +1,102 @@
+---
+title: "mask use numerical"
+output: github_document
+---
+
+```{r}
+library(tidyverse)
+library(lubridate)
+
+masks <- read_csv(file = "C:/Users/mkessler/Desktop/data-science-work/COVIDProject/MaskData.csv")
+
+stateabr <- read_csv('./data/stateShortToLong.csv')
+
+fips_county_state <- read_csv("./data/fips-by-state.csv")
+
+url_counties <- "https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv"
+
+filename_nyt <- "./nyt_counties.csv"
+
+## Download the data locally
+curl::curl_download(
+        url_counties,
+        destfile = filename_nyt
+      )
+
+## Loads the downloaded csv
+df_covid <- read_csv(filename_nyt)
+df_covid
+
+stateabr
+
+masks
+
+masks$Face_Masks_Required_in_Public[is.na(masks$Face_Masks_Required_in_Public)] <- 0
+
+masks2 <- masks %>%
+  mutate(
+    mask_value = case_when(
+      Face_Masks_Required_in_Public == "No" ~ '1',
+      Face_Masks_Required_in_Public == "Yes" ~ '2',
+      Face_Masks_Required_in_Public == '0' ~ '0'
+    )
+  ) %>%
+  select(state = State_Tribe_Territory, county = County_Name, date, mask_value, everything())
+
+
+masks2 <- masks2 %>%
+  mutate(date = mdy(date))
+
+masks2 %>%
+  left_join(stateabr, by = c('state' = 'Code')) %>%
+  select(State, county, date, mask_value)
+
+
+
+masks2 %>%
+  filter(state == 'CA' & county == 'San Mateo County') %>%
+  ggplot(aes(x = date, y = mask_value, color = mask_value)) +
+  geom_jitter() +
+  theme(axis.text.x = element_text(angle = 80, hjust = 1))
+
+masks2 %>%
+  filter(state == 'CA' & county == 'San Mateo County' & mask_value == '0')
+```
+
+
+```{r}
+mask_state <-
+  masks %>% 
+  right_join(stateabr, by = c("State_Tribe_Territory" = "Code")) %>% 
+  select(State, date, Face_Masks_Required_in_Public)
+
+mask_state
+```
+
+```{r}
+mask_county <-
+  masks %>% 
+  left_join(fips_county_state, by = c("County_Name" = "name", "State_Tribe_Territory" = "state")) %>% 
+  select(
+    State = State_Tribe_Territory,
+    County = County_Name,
+    date,
+    Face_Masks_Required_in_Public,
+    fips
+  )
+
+mask_county <- mask_county %>%
+  mutate(date = mdy(date)) %>%
+  select(maskreq = Face_Masks_Required_in_Public, everything())
+
+
+mask_county %>%
+  filter(County == 'Norfolk County' | County == 'San Mateo County') %>%
+  ggplot(aes(x = date, y = maskreq, color = County)) +
+  geom_jitter() +
+  theme(legend.position = 'none')
+  
+```
+
+```
+
