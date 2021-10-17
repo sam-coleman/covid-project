@@ -1,7 +1,32 @@
+---
+title: "Cross-border Covid Correlation"
+author: "Ian Eykamp"
+date: "10/17/2021"
+output: github_document
+---
+
+# Cross-border Covid Correlation
+
+This document and `actualGraph.Rmd` are for visualizing the cross-border correlation data created in the script `neighbors.R`.
+
+Correlations in Covid-19 case rates are computed for each pair of neighboring states in the contiguous US using the following formula. The difference between successive daily totals is calculated using the `diff` function, to give the number of new cases reported on that day. The rows of `state1` and `state2` are joined by date, but the date itself is not used. Then the correlation coefficient is calculated using `cor(state1, state2)`.
+
+The same correlation is then computed when each state is given an offset of between 1 and 100 days, using the `lag` parameter in `diff`. The idea is that states that lag behind one another in their cross-border correlation is an indicator of cross-border flow of Covid-19 cases from the first state to the lagging state.
+
+Take Alabama and Florida. Their simultaneous correlation of Covid-19 cases during the pandemic has an `r` coefficient of `0.537`. This is not a particularly strong correlation, especially compared with that between other states, and it is more likely to reflect the national trend in cases rather than a direct connection between the states in question.
+
+However, the lagging correlations
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
 library(tidyverse)
 load("C:/dev/git/covid-project/spatial_correlation/stateCorrs_different_lags.RData")
-# load("covid2/stateCorrs_100days.RData")
+```
 
+```{r}
 stateCorrs %>%
   ggplot(mapping = aes(x = neighbor, y = corr, color = lag)) +
   geom_jitter(
@@ -84,3 +109,11 @@ save(
   df_sorted, 
   file = "C:/dev/git/covid-project/spatial_correlation/covid_flows_sorted.RData"
 )
+
+```
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
