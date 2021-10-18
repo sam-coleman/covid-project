@@ -4,7 +4,8 @@ library(ggiraph)
 library(tools)
 library(cowplot)
 load("C:/dev/git/covid-project/data/mask_county.RData")
-load("C:/dev/git/covid-project/data/normalized_population.RData")
+# load("C:/dev/git/covid-project/data/normalized_population.RData")
+load("C:/dev/git/covid-project/data/covid_and_pop.RData")
 
 state_abbrev <- 
   read.csv("C:/dev/git/covid-project/data/stateShortToLong.csv") %>% 
@@ -28,12 +29,83 @@ mask_county_2 <-
     .keep = "unused"
   )
 
+# mask_covid_pop <- 
+#   mask_county_2 %>% 
+#   mutate(date = as.POSIXct())
+#   left_join(df_data, by = c("fips" = "fips", ))
+
+df_pop_2 <- 
+  df_data %>% 
+  group_by(fips, population) %>% 
+  summarize() %>% # collapse all the different dates
+  ungroup()
+
+us_0 <- 
+  mask_county_2 %>% 
+  left_join(df_pop_2, by = c("fips" = "fips")) %>% 
+  # first summarize over all dates
+  group_by(State, County, population) %>% 
+  summarize(            
+    days_with_mandate = 
+      if_else(
+        all(isNA), 
+        NA_real_, 
+        mean(masks) * 100
+      )
+  ) %>% 
+  # then aggregate, weighting by population
+  mutate(
+    weighted_days_with_mandate = days_with_mandate * population
+  ) %>% 
+  group_by(State) %>% 
+  summarize(
+    days_with_mandate = 
+      sum(weighted_days_with_mandate, na.rm = TRUE) / 
+        sum(population, na.rm = TRUE)
+  ) %>% 
+  mutate(
+    days_with_mandate = 
+      if_else(
+        days_with_mandate == 0, 
+        NA_real_, 
+        days_with_mandate
+      )
+  ) %>% 
+  rename(state = State)
+
+us_1 <- 
+  df_data %>% 
+  # first summarize over all dates
+  group_by(state, county, population) %>% 
+  summarize(
+    cases = max(cases)
+  ) %>% 
+  group_by(state) %>% 
+  summarize(
+    cases_per100k = sum(cases) / sum(population, na.rm = TRUE) * 1e5
+  ) %>% 
+  mutate(state = tolower(state), .keep = "unused")
+
+us_2 <- 
+  us_0 %>% 
+    left_join(
+      us_1, 
+      by = c("state" = "state")
+    )
+
+us_3 <- map_data("state") %>% 
+  left_join(
+    us_2, 
+    by = c("region" = "state")
+  )
+    
+  
 us <- map_data("state") %>% 
   left_join(
     mask_county_2 %>% 
       group_by(State) %>% 
       summarize(
-        county_days_with_mandate = 
+        days_with_mandate = 
           if_else(
             all(isNA), 
             NA_real_, 
@@ -67,7 +139,7 @@ make_imap <- function(fill_var, viridis_scale, fill_name) {
         map_id = region, 
         # fill = fill_var, # cases_per100k, 
         tooltip = sprintf(
-          "%s<br/>days with mandate: %s<br/>cumulative cases: %s", 
+          "%s<br/>days with mandate: %s%%<br/>cumulative cases: %s", 
           toTitleCase(region), 
           round(county_days_with_mandate, digits = 1), 
           prettyNum(floor(cases_per100k), big.mark = ",")
@@ -102,7 +174,7 @@ w <- widgetframe::frameWidget(girafe(code=print(
   )))
 w
 
-p1 <- make_imap("county_days_with_mandate", "mako")
+p1 <- make_imap("days_with_mandate", "mako")
 p2 <- make_imap("cases_per100k", "rocket")
 
 girafe(
