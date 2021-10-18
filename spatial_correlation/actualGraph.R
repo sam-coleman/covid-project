@@ -1,4 +1,4 @@
-`library(tidyverse)
+library(tidyverse)
 library(tidygraph)
 library(igraph)
 library(ggraph)
@@ -118,8 +118,10 @@ g + geom_map(
     color = "grey50"
   ) +
   expand_limits(x = us$long, y = us$lat) + 
-  coord_map()
-
+  coord_map() + 
+  labs(
+    title = "Temporal Cross-Border Covid-19 Case Correlations"
+  )
 ggsave("us_covid_flows.svg", width = 13, height = 11)
 
-`
+

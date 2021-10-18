@@ -11,6 +11,16 @@ state_abbrev <-
   read.csv("C:/dev/git/covid-project/data/stateShortToLong.csv") %>% 
   rename(State = ï..State)
 
+df_data <- 
+  df_data %>% 
+  mutate(
+    population = if_else(
+      county == "New York City" & state == "New York", 
+      8.419e6, 
+      population
+    )
+  )
+
 mask_county_2 <- 
   mask_county %>% 
   rename(masks = Face_Masks_Required_in_Public) %>% 
@@ -73,13 +83,19 @@ us_0 <-
   ) %>% 
   rename(state = State)
 
+# us_1 <- 
+#   df_data %>% 
+#   filter(date == max(date), state == "New York") %>% print()
+
+
 us_1 <- 
   df_data %>% 
   # first summarize over all dates
-  group_by(state, county, population) %>% 
-  summarize(
-    cases = max(cases)
-  ) %>% 
+  filter(date == max(date)) %>% 
+  # group_by(state, county, population) %>% 
+  # summarize(
+  #   cases = max(cases), 
+  # ) %>% print() %>% 
   group_by(state) %>% 
   summarize(
     cases_per100k = sum(cases) / sum(population, na.rm = TRUE) * 1e5
@@ -174,20 +190,23 @@ p1 <- make_imap("days_with_mandate", "mako") +
     fill = "Percent Days\nwith Mandate", 
     title = "Percent Days With Mask Mandates", 
     subtitle = "Grey = No Data"
-  )
+  ) + 
+  theme(axis.title = element_blank())
 p2 <- make_imap("cases_per100k", "rocket") + 
   labs(
     x = "Long.", 
     y = "Lat.",
     fill = "Cases per 100k", 
-    title = "Percent Days With Mask Mandates", 
-    subtitle = "Grey = No Data"
-  )
+    title = "Cumulative Cases Per 100k", 
+    subtitle = "Weighted Average by Population"
+  ) + 
+  theme(axis.title = element_blank())
 
 girafe(
   ggobj = plot_grid(
     p1, 
-    p2
+    p2, 
+    ncol = 1
   ), # , ncol = 1
   width_svg = 12, 
   height_svg = 8
