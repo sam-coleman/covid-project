@@ -20,11 +20,12 @@ library(tidyverse)
 filename <- "./data/ACSST5Y2018.S1901_data_with_overlays_2021-10-12T134520.csv"
 df_income_total <- read_csv(filename, col_names = c("id", "Geographic Area Name", "Estimate!!Households!!Total", "Margin of Error!!Households MOE!!Total"), skip = 2)
 df_income <- df_income_total %>% select(1:4)
-head(df_income)
+df_income
 ```
 ```{r}
 filename_pop <- "./data/ACSDT5Y2018.B01003_data_with_overlays_2021-10-05T112340.csv"
 df_pop <- read_csv(filename_pop, col_names = c("id", "Geographic Area Name", "Estimate!!Total", "Margin of Error!!Total"), skip = 2)
+df_pop
 ```
 
 ```{r}
@@ -49,7 +50,7 @@ df_fips_pop <- df_pop %>% mutate(fips = str_extract(id, "(\\d*$)"))
 ```{r}
 df_q4 <- df_covid %>% left_join(df_q3, by = "fips")
 df_q5 <- df_q4 %>% left_join(df_fips_pop, by = "fips")
-df_q5
+arrange(df_q5, desc(`Estimate!!Households!!Total`))
 ```
 ```{r}
 df_data <-
@@ -92,7 +93,10 @@ df_normalized %>%
 
 df_normalized %>%
   filter(date == max_date) %>%
-  ggplot() + 
-  geom_point(mapping = aes(med_income, cases_per100k))
+  filter(population > 1000000) %>%
+  filter(population < 10000000) %>%
+  ggplot(mapping = aes(med_income, cases_per100k)) + 
+  geom_point() +
+  geom_smooth()
 ```
 
