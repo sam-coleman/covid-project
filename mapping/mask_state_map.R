@@ -99,67 +99,60 @@ us_3 <- map_data("state") %>%
     by = c("region" = "state")
   )
     
-  
-us <- map_data("state") %>% 
-  left_join(
-    mask_county_2 %>% 
-      group_by(State) %>% 
-      summarize(
-        days_with_mandate = 
-          if_else(
-            all(isNA), 
-            NA_real_, 
-            mean(masks) * 100
-          )
-      ), 
-    df_2, 
-    by = c("region" = "State")
-  )
 
-us_2 <- us %>% 
-  left_join(
-    df_normalized %>% 
-      mutate(state = tolower(state)) %>% 
-      filter(date == max(date)) %>% 
-      group_by(state) %>% 
-      summarize(
-        deaths_per100k = mean(deaths_per100k * population, na.rm = TRUE), 
-        cases_per100k = mean(cases_per100k * population, na.rm = TRUE)
-      ), 
-    df_2, 
-    by = c("region" = "state")
-  )
+# us <- map_data("state") %>% 
+#   left_join(
+#     mask_county_2 %>% 
+#       group_by(State) %>% 
+#       summarize(
+#         days_with_mandate = 
+#           if_else(
+#             all(isNA), 
+#             NA_real_, 
+#             mean(masks) * 100
+#           )
+#       ), 
+#     df_2, 
+#     by = c("region" = "State")
+#   )
 
-make_imap <- function(fill_var, viridis_scale, fill_name) {
+# us_2 <- us %>% 
+#   left_join(
+#     df_normalized %>% 
+#       mutate(state = tolower(state)) %>% 
+#       filter(date == max(date)) %>% 
+#       group_by(state) %>% 
+#       summarize(
+#         deaths_per100k = mean(deaths_per100k * population, na.rm = TRUE), 
+#         cases_per100k = mean(cases_per100k * population, na.rm = TRUE)
+#       ), 
+#     df_2, 
+#     by = c("region" = "state")
+#   )
+
+make_imap <- function(fill_var, viridis_scale) {
   g_2 <- 
-    ggplot(us_2, mapping = aes_string(fill = fill_var)) + 
+    ggplot(us_3, mapping = aes_string(fill = fill_var)) + 
     geom_map_interactive(
-      data = us_2, 
+      data = us_3, 
       mapping = aes(
         map_id = region, 
         # fill = fill_var, # cases_per100k, 
         tooltip = sprintf(
-          "%s<br/>days with mandate: %s%%<br/>cumulative cases: %s", 
+          "%s<br/>%% days with mandate: %s%%<br/>total cases per 100k: %s", 
           toTitleCase(region), 
-          round(county_days_with_mandate, digits = 1), 
+          round(days_with_mandate, digits = 1), 
           prettyNum(floor(cases_per100k), big.mark = ",")
         ), 
         data_id = region
       ), 
-      map = us_2, 
+      map = us_3, 
       # fill = "transparent", 
       color = "black"
     ) + 
-    expand_limits(x = us_2$long, y = us_2$lat) + 
+    expand_limits(x = us_3$long, y = us_3$lat) + 
     coord_map() + 
-    viridis::scale_fill_viridis(option = viridis_scale) + 
-    labs(
-      x = "Long.", 
-      y = "Lat.",
-      fill = fill_name, # "Cases per 100k", 
-      title = "Percent Days With Mask Mandates", 
-      subtitle = "Grey = No Data"
-    )
+    viridis::scale_fill_viridis(option = viridis_scale)
 }
 
 w <- widgetframe::frameWidget(girafe(code=print(
@@ -174,8 +167,22 @@ w <- widgetframe::frameWidget(girafe(code=print(
   )))
 w
 
-p1 <- make_imap("days_with_mandate", "mako")
-p2 <- make_imap("cases_per100k", "rocket")
+p1 <- make_imap("days_with_mandate", "mako") + 
+  labs(
+    x = "Long.", 
+    y = "Lat.",
+    fill = "Percent Days\nwith Mandate", 
+    title = "Percent Days With Mask Mandates", 
+    subtitle = "Grey = No Data"
+  )
+p2 <- make_imap("cases_per100k", "rocket") + 
+  labs(
+    x = "Long.", 
+    y = "Lat.",
+    fill = "Cases per 100k", 
+    title = "Percent Days With Mask Mandates", 
+    subtitle = "Grey = No Data"
+  )
 
 girafe(
   ggobj = plot_grid(
