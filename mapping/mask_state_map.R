@@ -2,7 +2,9 @@ library(tidyverse)
 library(ggmap)
 library(ggiraph)
 library(tools)
+library(cowplot)
 load("C:/dev/git/covid-project/data/mask_county.RData")
+load("C:/dev/git/covid-project/data/normalized_population.RData")
 
 state_abbrev <- 
   read.csv("C:/dev/git/covid-project/data/stateShortToLong.csv") %>% 
@@ -35,42 +37,80 @@ us <- map_data("state") %>%
           if_else(
             all(isNA), 
             NA_real_, 
-            mean(masks)
+            mean(masks) * 100
           )
       ), 
     df_2, 
     by = c("region" = "State")
   )
 
-
-g <- 
-  ggplot(us) + 
-  geom_map_interactive(
-    data = us, 
-    mapping = aes(
-      map_id = region, 
-      fill = county_days_with_mandate, 
-      tooltip = sprintf(
-        "%s<br/>%s%%", 
-        toTitleCase(region), 
-        county_days_with_mandate * 100
-      )
-    ), 
-    map = us, 
-    # fill = "transparent", 
-    color = "black"
-  ) + 
-  expand_limits(x = us$long, y = us$lat) + 
-  coord_map() + 
-  viridis::scale_fill_viridis() + 
-  labs(
-    x = "Long.", 
-    y = "Lat.",
-    fill = "Mask Mandate\nPercentage", 
-    title = "Cumulative Mask Mandates", 
-    subtitle = "Aggregated for each county in the state"
+us_2 <- us %>% 
+  left_join(
+    df_normalized %>% 
+      mutate(state = tolower(state)) %>% 
+      filter(date == max(date)) %>% 
+      group_by(state) %>% 
+      summarize(
+        deaths_per100k = mean(deaths_per100k * population, na.rm = TRUE), 
+        cases_per100k = mean(cases_per100k * population, na.rm = TRUE)
+      ), 
+    df_2, 
+    by = c("region" = "state")
   )
 
-w <- widgetframe::frameWidget(girafe(code=print(g)))
+make_imap <- function(fill_var, viridis_scale, fill_name) {
+  g_2 <- 
+    ggplot(us_2, mapping = aes_string(fill = fill_var)) + 
+    geom_map_interactive(
+      data = us_2, 
+      mapping = aes(
+        map_id = region, 
+        # fill = fill_var, # cases_per100k, 
+        tooltip = sprintf(
+          "%s<br/>days with mandate: %s<br/>cumulative cases: %s", 
+          toTitleCase(region), 
+          round(county_days_with_mandate, digits = 1), 
+          prettyNum(floor(cases_per100k), big.mark = ",")
+        ), 
+        data_id = region
+      ), 
+      map = us_2, 
+      # fill = "transparent", 
+      color = "black"
+    ) + 
+    expand_limits(x = us_2$long, y = us_2$lat) + 
+    coord_map() + 
+    viridis::scale_fill_viridis(option = viridis_scale) + 
+    labs(
+      x = "Long.", 
+      y = "Lat.",
+      fill = fill_name, # "Cases per 100k", 
+      title = "Percent Days With Mask Mandates", 
+      subtitle = "Grey = No Data"
+    )
+}
+
+w <- widgetframe::frameWidget(girafe(code=print(
+    # make_imap(
+    #   "county_days_with_mandate", 
+    #   "mako", 
+    #   "Percent Days\nwith Mandate")
+    make_imap(
+      "cases_per100k",
+      "rocket", 
+      "Cases per 100k")
+  )))
 w
+
+p1 <- make_imap("county_days_with_mandate", "mako")
+p2 <- make_imap("cases_per100k", "rocket")
+
+girafe(
+  ggobj = plot_grid(
+    p1, 
+    p2
+  ), # , ncol = 1
+  width_svg = 12, 
+  height_svg = 8
+)
 
