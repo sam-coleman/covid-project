@@ -62,6 +62,10 @@ df_pop_fip <-
     into = c("id_beginning", "fips"),
     sep = -5
   )
+
+df_pop_fip %>% filter(`Geographic Area Name` == "New York City, New York")
+
+df_covid
 ```
 ``` {r}
 
@@ -88,6 +92,8 @@ df_data <-
     left_join(mask_county_filtered, by = c("fips", "date"))
 
 df_data
+
+
 ```
 ```{r}
 df_count <- df_data %>%
@@ -128,7 +134,7 @@ df_percent %>%
 df_data %>%
   select(date, county, State, cases, deaths, population, Face_Masks_Required_in_Public) %>%
   mutate(avg_cases = c(NA, diff(cases, lag = 1))) %>%
-  filter(State == "MI") %>%
+  filter(county == "Santa Clara") %>%
   ggplot(aes(x = date, y = avg_cases)) + 
   geom_point(mapping = aes(color = Face_Masks_Required_in_Public)) + 
   # geom_line() +
@@ -172,11 +178,10 @@ df_data2 %>%
 df_percent %>%
   group_by(State) %>%
   ggplot() + 
-  geom_col(aes(x = State, y = total_casesper100k, fill = percent_mask))
+  geom_point(aes(x = percent_mask, y = total_casesper100k))
 ```
 
 ```{r}
 df_percent
-
 ```
 
