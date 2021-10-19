@@ -1,0 +1,22 @@
+---
+title: "Team Report"
+author: "Carlos Godinez"
+date: 10/19/2021
+output:
+  github_document:
+    toc: true
+---
+
+## Background
+
+
+## Dataset Used
+
+
+## Team Question
+
+## Our Graph
+
+## Conclusion
+
+## Future Exploration 
