@@ -98,7 +98,8 @@ us_1 <-
   # ) %>% print() %>% 
   group_by(state) %>% 
   summarize(
-    cases_per100k = sum(cases) / sum(population, na.rm = TRUE) * 1e5
+    cases_per100k = sum(cases) / sum(population, na.rm = TRUE) * 1e5, 
+    deaths_per100k = sum(deaths) / sum(population, na.rm = TRUE) * 1e5
   ) %>% 
   mutate(state = tolower(state), .keep = "unused")
 
