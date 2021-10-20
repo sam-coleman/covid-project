@@ -97,7 +97,7 @@ df_data
 ```
 ```{r}
 df_count <- df_data %>%
-  filter(!is.na(cases_per100k), !is.na(deaths_per100k)) %>%
+  filter(!is.na(cases_per100k), !is.na(deaths_per100k), !is.na(State)) %>%
   group_by(State, date, Face_Masks_Required_in_Public) %>%
   summarize(count = n(), total_casesper100k = mean(cases_per100k), total_deathsper100k = mean(deaths_per100k)) %>%
   pivot_wider(names_from = Face_Masks_Required_in_Public,
