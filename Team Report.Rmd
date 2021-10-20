@@ -9,6 +9,7 @@ output:
 
 ## Background
 
+In late 2019 a novel coronavirus quickly spread throughout the global population causing a pandemic that is still causing massive disruptions in late 2021. SARS-CoV-2, the virus that causes COVID-19, is a highly contagious respiratory virus. In response to the rapidly spreading disease and it’s even more infectious variants, local governments and counties throughout the pandemic have instituted face covering and mask mandates to slow the spread. While specifics change from location to location,  a mask mandate largely requires individuals to cover their face and noses when in a public setting . The intent behind this is to reduce the viral load that a potentially infectious person could spread to others [1]. Masks have been found to be effective in slowing the spread of COVID-19 and are recommended to be worn by the CDC when in geographical areas of high spread [2]. 
 
 ## Dataset Used
 
@@ -37,3 +38,15 @@ The second limitation of the dataset is that a mask mandate does not necessarily
 
 
 ## Future Exploration 
+
+
+# Notes
+
+<!-- -------------------------------------------------- -->
+
+[1] https://pubmed.ncbi.nlm.nih.gov/32512240/
+
+[2] https://www.cdc.gov/coronavirus/2019-ncov/prevent-getting-sick/cloth-face-cover-guidance.html
+
+
+
