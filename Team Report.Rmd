@@ -1,5 +1,5 @@
 ---
-title: "Team Report"
+title: "Team_Report"
 author: "Sam Coleman, Ian Eykamp, Carlos Godinez, Evelyn Kessler, Isabel Serrato"
 date: 10/19/2021
 output:
@@ -82,7 +82,7 @@ We found that there is a negative correlation between the average percentage of 
 The maps below show the mask mandate percentage, cases per 100 000, and deaths per 100 000 residents of each of the contiguous states. For the mask mandate data, the fill aesthetic is a darker color where mask mandates were imposed for longer. For the cases and deaths per 100 000, it is a darker color where cases and deaths are lower. In states where the correlation between cases and mask mandates holds, the shade of the fill aesthetic will vary in tandem; and in states that do not follow the correlation, one map will be substantially darker or lighter than the other.
 
 ```{r}
-load("C:/dev/git/covid-project/data/mask_map_data.RData")
+load("./data/mask_map_data.RData")
 
 girafe(
   ggobj = plot_grid(mask_map, case_map, death_map, ncol = 1),
