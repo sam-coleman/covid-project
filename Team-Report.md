@@ -168,7 +168,6 @@ us_3 %>%
     axis.text.y = element_text(size = 14),
     axis.title.y = element_text(size = 14),
     strip.text.y = element_text(size = 14),
-    
   ) +
   labs(
     x = "Cummulative percent of people under mask mandate (%)",
@@ -198,6 +197,8 @@ reduce the number of cases but not the number of deaths from COVID-19.
 
 ## Interactive Map
 
+(May be better viewed as an html file here).
+
 The maps below show the mask mandate percentage, cases per 100 000, and
 deaths per 100 000 residents of each of the contiguous states. For the
 mask mandate data, the fill aesthetic is a darker color where mask
@@ -220,7 +221,16 @@ girafe(
 
 ![](Team-Report_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
-Some geographic trends can be seen in the map data, including
+Some geographic trends can be seen in the map data, including relatively
+longer-duration mask mandates and lower case rates on the West coast and
+in New England, as well as marginally higher case rates in the South and
+Midwest. The case rates appear well coupled with death rates per 100 000
+on the West coast and large states like Texas, California, and Florida.
+Some states in the middle of the country, including Utah, Nebraska, and
+Tennessee, have a much smaller proportion of deaths compared with their
+cases. States that have a weak correlations between deaths and cases are
+a possible explanation for the lack of correlation between mask mandates
+and deaths.
 
 ## Future Exploration
 
