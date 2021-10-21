@@ -147,7 +147,7 @@ us_3 <- map_data("state") %>%
 #     by = c("region" = "state")
 #   )
 
-make_imap <- function(fill_var, viridis_scale) {
+make_imap <- function(fill_var, viridis_scale, direction = 1) {
   g_2 <- 
     ggplot(us_3, mapping = aes_string(fill = fill_var)) + 
     geom_map_interactive(
@@ -156,10 +156,11 @@ make_imap <- function(fill_var, viridis_scale) {
         map_id = region, 
         # fill = fill_var, # cases_per100k, 
         tooltip = sprintf(
-          "%s<br/>%% days with mandate: %s%%<br/>total cases per 100k: %s", 
+          "%s<br/>%% days with mandate: %s%%<br/>total cases per 100k: %s<br/>total deaths per 100k: %s", 
           toTitleCase(region), 
           round(days_with_mandate, digits = 1), 
-          prettyNum(floor(cases_per100k), big.mark = ",")
+          prettyNum(floor(cases_per100k), big.mark = ","), 
+          prettyNum(floor(deaths_per100k), big.mark = ",")
         ), 
         data_id = region
       ), 
@@ -169,34 +170,31 @@ make_imap <- function(fill_var, viridis_scale) {
     ) + 
     expand_limits(x = us_3$long, y = us_3$lat) + 
     coord_map() + 
-    viridis::scale_fill_viridis(option = viridis_scale)
+    viridis::scale_fill_viridis(option = viridis_scale, direction = direction)
 }
 
-w <- widgetframe::frameWidget(girafe(code=print(
-    # make_imap(
-    #   "county_days_with_mandate", 
-    #   "mako", 
-    #   "Percent Days\nwith Mandate")
-    make_imap(
-      "cases_per100k",
-      "rocket", 
-      "Cases per 100k")
-  )))
-w
-
-p1 <- make_imap("days_with_mandate", "mako") + 
+p1 <- make_imap("days_with_mandate", "mako", direction = -1) + 
   labs(
-    x = "Long.", 
-    y = "Lat.",
+    # x = "Long.", 
+    # y = "Lat.",
     fill = "Percent Days\nwith Mandate", 
     title = "Percent Days With Mask Mandates", 
-    subtitle = "Grey = No Data"
+    subtitle = "Gray = No Data"
   ) + 
   theme(axis.title = element_blank())
-p2 <- make_imap("cases_per100k", "rocket") + 
+p2 <- make_imap("cases_per100k", "rocket", direction = 1) + 
   labs(
-    x = "Long.", 
-    y = "Lat.",
+    # x = "Long.", 
+    # y = "Lat.",
+    fill = "Cases per 100k", 
+    title = "Cumulative Cases Per 100k", 
+    subtitle = "Weighted Average by Population"
+  ) + 
+  theme(axis.title = element_blank())
+p3 <- make_imap("deaths_per100k", "rocket", direction = 1) + 
+  labs(
+    # x = "Long.", 
+    # y = "Lat.",
     fill = "Cases per 100k", 
     title = "Cumulative Cases Per 100k", 
     subtitle = "Weighted Average by Population"
@@ -207,6 +205,7 @@ girafe(
   ggobj = plot_grid(
     p1, 
     p2, 
+    p3, 
     ncol = 1
   ), # , ncol = 1
   width_svg = 12, 

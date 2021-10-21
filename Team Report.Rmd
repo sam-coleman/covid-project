@@ -5,6 +5,7 @@ date: 10/19/2021
 output:
   github_document:
     toc: true
+always_allow_html: true
 ---
 
 ## Background
@@ -29,6 +30,9 @@ During our exploratory data analysis (EDA) we looked into normalized cases and d
 
 ```{r}
 library(tidyverse)
+library(ggiraph)
+library(cowplot)
+library(tools)
 load("data/cases_mandate_new_york_fixed.RData")
 load("data/mask_deaths")
 ```
@@ -58,7 +62,6 @@ us_3 %>%
     axis.text.y = element_text(size = 14),
     axis.title.y = element_text(size = 14),
     strip.text.y = element_text(size = 14),
-    
   ) +
   labs(
     x = "Cummulative percent of people under mask mandate (%)",
@@ -68,9 +71,27 @@ us_3 %>%
   ) 
 ```
 
-## Conclusion
+## Observations
 
 We found that there is a negative correlation between the average percentage of days that each county had a mask mandate and the number of Covid cases per 100,000 residents. At the same time, there is not a strong correlation between the average percent of days that each county had a mask mandate and the number of deaths per 100,000 residents. Therefore, the dataset supports the claim that mask mandates may help to reduce the number of cases but not the number of deaths from COVID-19.
+
+## Interactive Map
+
+(May be better viewed as an html file here).
+
+The maps below show the mask mandate percentage, cases per 100 000, and deaths per 100 000 residents of each of the contiguous states. For the mask mandate data, the fill aesthetic is a darker color where mask mandates were imposed for longer. For the cases and deaths per 100 000, it is a darker color where cases and deaths are lower. In states where the correlation between cases and mask mandates holds, the shade of the fill aesthetic will vary in tandem; and in states that do not follow the correlation, one map will be substantially darker or lighter than the other.
+
+```{r}
+load("C:/dev/git/covid-project/data/mask_map_data.RData")
+
+girafe(
+  ggobj = plot_grid(mask_map, case_map, death_map, ncol = 1),
+  width_svg = 12, 
+  height_svg = 8
+)
+```
+
+Some geographic trends can be seen in the map data, including relatively longer-duration mask mandates and lower case rates on the West coast and in New England, as well as marginally higher case rates in the South and Midwest. The case rates appear well coupled with death rates per 100 000 on the West coast and large states like Texas, California, and Florida. Some states in the middle of the country, including Utah, Nebraska, and Tennessee, have a much smaller proportion of deaths compared with their cases. States that have a weak correlations between deaths and cases are a possible explanation for the lack of correlation between mask mandates and deaths.
 
 ## Future Exploration
 
